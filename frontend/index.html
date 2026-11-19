@@ -96,7 +96,14 @@ createApp({
       const j=await r.json(); actionErr.value=r.ok?(`滞后 ${j.lag_minutes} 分 · ${j.level} · ${j.output_mode}`):(j.detail||'失败');
       await refresh();
     }
-    async function doCatchup(name){await fetch('/api/catchup/'+encodeURIComponent(name),{method:'POST',headers:auth()});await refresh();}
+    async function doCatchup(name){
+      const r=await fetch('/api/catchup/'+encodeURIComponent(name),{method:'POST',headers:auth()});
+      if(r.status===409){
+        const j=await r.json().catch(()=>({}));
+        actionErr.value='空窗切断：'+(j.detail||'该源存在未闭合空窗，禁止补齐亮绿灯');
+      }
+      await refresh();
+    }
     onMounted(()=>{if(token.value)refresh();});
     return {token,user,username,password,err,tab,nav,sources,arrivals,catchups,form,actionErr,frozen,degraded,modeClass,login,logout,recordArrival,doCatchup};
   },
